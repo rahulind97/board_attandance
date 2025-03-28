@@ -107,6 +107,7 @@ class _AttendanceScreenState extends State<HomeScreen>
         _currentLang=position.longitude;
       });
 
+
       if (_currentLat != null && _currentLang != null) {
         await _getAddress(_currentLat!, _currentLang!);
         double distanceInMeters = Geolocator.distanceBetween(_checkInLat, _checkInLong, _currentLat, _currentLang);
