@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Utils {
@@ -45,6 +46,24 @@ class Utils {
 
     return buffer.toString();
   }
+  static String utcToLocalTime(String utcTime) {
+    try {
+      // Ensure it's treated as UTC
+      if (!utcTime.endsWith('Z')) {
+        utcTime = '${utcTime}Z';
+      }
+
+      DateTime utcDateTime = DateTime.parse(utcTime).toUtc();
+      DateTime localDateTime = utcDateTime.toLocal();
+
+      final timeFormat = DateFormat('hh:mm a');  // 12-hour format with AM/PM
+      return timeFormat.format(localDateTime);
+    } catch (e) {
+      print('Error parsing time: $e');
+      return '';
+    }
+  }
+
   static int getIdBySubName(String jsonResponse, String subName) {
     final decodedResponse = json.decode(jsonResponse);
 

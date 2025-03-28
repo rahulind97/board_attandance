@@ -211,14 +211,12 @@ class _AttendanceScreenState extends State<HomeScreen>
 
         print("sd"+data['data']['check_in'].toString());
         print("sddeßd"+data['data']['office']['lat'].toString());
-        _checkInTime=data['data']['check_in'];
-        _checkOutTime=data['data']['check_out'];
+        _checkInTime=Utils.utcToLocalTime(data['data']['check_in']);
+        _checkOutTime=Utils.utcToLocalTime(data['data']['check_out']);
         _status=data['data']['checkinout_status'];
         _checkInLat = double.tryParse(data['data']['office']['lat'].toString()) ?? 0.0;
         _checkInLong = double.tryParse(data['data']?['office']?['long']?.toString() ?? '') ?? 0.0;
         _checkInRad = double.tryParse(data['data']?['office']?['radius']?.toString() ?? '') ?? 0.0;
-
-
         setState(() {
 
         });
