@@ -117,7 +117,7 @@ class _AttendanceScreenState extends State<HomeScreen>
         if(distanceInMeters <= _checkInRad){
           print("distance"+distanceInMeters.toString());
           _currentRadius= distanceInMeters.toString();
-         _status== '' ? _checkInOut("in") :_checkInOut("out");
+          _status== '' ? _checkInOut("in") :_checkInOut("out");
 
         }
         else Fluttertoast.showToast(msg: "You are not in Checkin Range");
@@ -154,7 +154,6 @@ class _AttendanceScreenState extends State<HomeScreen>
   }
 
   void _checkInOut(String action) async {
-    setState(() => _isLoading = true);
 
     try {
       final response = await _dio.post(
@@ -178,7 +177,7 @@ class _AttendanceScreenState extends State<HomeScreen>
 
       if (response.statusCode == 200) {
         final data = response.data;
-        Fluttertoast.showToast(msg: "Login: ${response.statusCode}");
+        Fluttertoast.showToast(msg: "Login: ${data['message']}");
         _getCheckInDetails();
       } else {
         Fluttertoast.showToast(msg: "Login failed: ${response.statusCode}");
@@ -209,14 +208,52 @@ class _AttendanceScreenState extends State<HomeScreen>
       if (response.statusCode == 200) {
         final data = response.data;
 
-        print("sd"+data['data']['check_in'].toString());
-        print("sddeßd"+data['data']['office']['lat'].toString());
-        _checkInTime=Utils.utcToLocalTime(data['data']['check_in']);
-        _checkOutTime=Utils.utcToLocalTime(data['data']['check_out']);
+        print("trace1");
+        _checkInTime = (data['data']?['check_in'] != null
+            ? Utils.utcToLocalTime(data['data']['check_in'])
+            : null)!;
+        print("trace2");
+
+
+        _checkOutTime = (data['data']?['check_out'] != null
+            ? Utils.utcToLocalTime(data['data']['check_out'])
+            : null) ?? '';
+
+        print("trace3");
+
+        String? checkIn = data['data']?['check_in'];
+        String? checkOut = data['data']?['check_out'];
+        print("trace4");
+
+// Handle null and empty string cases properly
+        DateTime? time1 = (checkIn != null && checkIn.isNotEmpty) ? DateTime.parse(checkIn) : null;
+        DateTime? time2 = (checkOut != null && checkOut.isNotEmpty) ? DateTime.parse(checkOut) : null;
+
+        print("trace4");
+
+
+        if (time1 != null && time2 != null) {
+          print("trace6");
+          Duration difference = time2.difference(time1);
+          // Convert to hh:mm format
+          String formattedTime = '${difference.inHours.toString().padLeft(2, '0')}:${(difference.inMinutes % 60).toString().padLeft(2, '0')}';
+          _totalTime = formattedTime;
+          print('Difference: $formattedTime');
+        } else if (time1 != null && time2 == null) {
+          print("trace5");
+          _totalTime = "N/A";  // Handle empty check-out case
+          print('Check-out time is missing');
+        } else {
+          print("trace6");
+          print('Invalid time values');
+        }
+
+
         _status=data['data']['checkinout_status'];
         _checkInLat = double.tryParse(data['data']['office']['lat'].toString()) ?? 0.0;
         _checkInLong = double.tryParse(data['data']?['office']?['long']?.toString() ?? '') ?? 0.0;
         _checkInRad = double.tryParse(data['data']?['office']?['radius']?.toString() ?? '') ?? 0.0;
+
         setState(() {
 
         });
@@ -280,7 +317,7 @@ class _AttendanceScreenState extends State<HomeScreen>
           const SizedBox(height: 20),
           Text(
             _time,
-            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 44, fontWeight: FontWeight.bold),
           ),
           Text(
             _date,
@@ -298,7 +335,16 @@ class _AttendanceScreenState extends State<HomeScreen>
                     child: GestureDetector(
                       onTap: () async {
                         print("Check In tapped");
-                        await _getCurrentLocation();
+                        if(_status=='inout'){
+                          Fluttertoast.showToast(msg: "You alredy punch out");
+                        }else
+                        {
+                          Utils.progressbar(context);
+                          await _getCurrentLocation();
+                          Navigator.pop(context);
+                        }
+
+
                       },
                       onTapDown: (_) {
                         setState(() {
@@ -310,8 +356,8 @@ class _AttendanceScreenState extends State<HomeScreen>
                           _scale = 1.0; // Return to normal size after tap
                         });
                         // Perform your navigation or other action here
-                     //   String loginTAG = "state";
-                     //   Utils.navigateToPageAnimation(context, StateScreenLogin(loginTAG: loginTAG));
+                        //   String loginTAG = "state";
+                        //   Utils.navigateToPageAnimation(context, StateScreenLogin(loginTAG: loginTAG));
 
                         //  Fluttertoast.showToast(gravity: ToastGravity.CENTER,gravity: ToastGravity.CENTER,msg: "State Login coming soon");
                       },
@@ -324,7 +370,7 @@ class _AttendanceScreenState extends State<HomeScreen>
                         duration: const Duration(milliseconds: 100),
                         transform: Matrix4.identity()..scale(_scale),
                         child: Image.asset(
-                          _status == '' || _status == 'in'
+                          _status == ''
                               ? 'assets/checkin.png' // Show checkin image
                               : 'assets/checkout.png', // Show checkout image
                           width: 180,
@@ -347,7 +393,7 @@ class _AttendanceScreenState extends State<HomeScreen>
             children: [
               _buildIconWithLabel('assets/checkin_logo.png', 'Check In', _checkInTime == '' ? '--:--' : _checkInTime),
               _buildIconWithLabel('assets/checkout_logo.png', 'Check Out', _checkOutTime == '' ? '--:--' :_checkOutTime),
-              _buildIconWithLabel('assets/total_time.png', 'Total Hrs', '8:10'),
+              _buildIconWithLabel('assets/total_time.png', 'Total Hrs', _totalTime),
             ],
           ),
           const SizedBox(height: 20),

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -36,6 +37,23 @@ class Utils {
           ),
     );
   }
+  static void progressbar(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+
+      builder: (BuildContext context) {
+        return WillPopScope(
+          child:SpinKitDoubleBounce(
+
+            color: Colors.red[800],
+            size: 50.0,
+          ),
+          onWillPop: () async => false,
+        );
+      },
+    );
+  }
 
   static String formDataToString(FormData formData) {
     StringBuffer buffer = StringBuffer();
@@ -48,15 +66,14 @@ class Utils {
   }
   static String utcToLocalTime(String utcTime) {
     try {
-      // Ensure it's treated as UTC
+      // Append 'Z' if not already present to mark it as UTC
       if (!utcTime.endsWith('Z')) {
         utcTime = '${utcTime}Z';
       }
-
       DateTime utcDateTime = DateTime.parse(utcTime).toUtc();
       DateTime localDateTime = utcDateTime.toLocal();
 
-      final timeFormat = DateFormat('hh:mm a');  // 12-hour format with AM/PM
+      final timeFormat = DateFormat('hh:mm a');
       return timeFormat.format(localDateTime);
     } catch (e) {
       print('Error parsing time: $e');
