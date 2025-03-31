@@ -10,6 +10,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 
 import '../utils/ApiInterceptor.dart';
+import 'AttandanceHistoryScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -281,11 +282,11 @@ class _AttendanceScreenState extends State<HomeScreen>
         actions: [
           GestureDetector(
             onTap: () {
-              // Navigate to profile page
+              Navigator.push(context, MaterialPageRoute(builder: (context) => AttendanceHistory()),);
             },
             child: CircleAvatar(
               backgroundColor: Colors.grey[200],
-              child: const Icon(Icons.person, color: Colors.black),
+              child: const Icon(Icons.manage_history, color: Colors.black),
             ),
           ),
           const SizedBox(width: 16),
