@@ -5,14 +5,19 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../constants/constants.dart';
 import '../utils/ApiInterceptor.dart';
 import '../utils/Utils.dart';
 
 class AttendanceHistory extends StatefulWidget {
-  const AttendanceHistory({super.key});
+  final String userId;
+
+  const AttendanceHistory({
+    super.key,
+    required this.userId,
+  });
 
   @override
   State<AttendanceHistory> createState() => _AttendanceHistoryState();
@@ -21,7 +26,11 @@ class AttendanceHistory extends StatefulWidget {
 class _AttendanceHistoryState extends State<AttendanceHistory> {
   DateTime? startDate;
   DateTime? endDate;
-  final Dio _dio = ApiInterceptor.createDio(); // Use ApiInterceptor to create Dio instance
+  bool _isLoading = true;  // Flag to track loading state
+
+  DateTime now = DateTime.now();
+  final Dio _dio = ApiInterceptor.createDio(); // Use ApiInter
+  // ceptor to create Dio instance
   @override
   void initState() {
     super.initState();
@@ -29,10 +38,6 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
       _getAttandanceHistory();
     });
   }
-  // Future<void> initfdf() async {   // Change return type to Future<void>
-  //   await _getAttandanceHistory();
-  // }
-  //
   late List<Map<String, dynamic>> attendanceData = [
     // {'date': DateTime(2025, 3, 6), 'in': '09:40 AM', 'out': '06:30 PM', 'hours': '08:50'},
     // {'date': DateTime(2025, 3, 7), 'in': '09:30 AM', 'out': '06:30 PM', 'hours': '09:00'},
@@ -53,7 +58,18 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
     }).toList();
   }
   void _getAttandanceHistory() async {
-    Utils.progressbar(context);
+    // Utils.progressbar(context);
+    DateTime defaultStartDate = DateTime(now.year, now.month, 1);
+
+// Check if startDate is null or empty, and set the default start date if true
+    Object startDate1 = (startDate == null || startDate=="")
+        ? DateFormat('yyyy-MM-dd').format(defaultStartDate)
+        : startDate!;
+
+// Check if endDate is null or empty, and set the current date if true
+    Object endDate2 = (endDate == null || endDate=="")
+        ? DateFormat('yyyy-MM-dd').format(now)
+        : endDate!;
     try {
       final response = await _dio.post(
         constants.BASE_URL + constants.IN_OUT_HISTORY,
@@ -61,66 +77,77 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
           headers: {'Content-Type': 'application/json'},
         ),
         data: {
-          "user_id": await Utils.getStringFromPrefs(constants.USER_ID),
+          "user_id": widget.userId,
+          "role": await Utils.getStringFromPrefs(constants.USER_ROLE),
+          // "role": '1',
+          "start_date":startDate1,
+          "end_date":endDate2
+
         },
       );
 
       if (response.statusCode == 200) {
         final data = response.data;
 
-        List<dynamic> dataList = data['data'];
+        // Validate if 'data' exists and is not null or empty
+        if (data != null && data.containsKey('data') && data['data'] != null && data['data'].isNotEmpty) {
+          List<dynamic> dataList = data['data'];
+          print("object242323r");
+          print(data['data']);
 
-        List<Map<String, dynamic>> attendanceData2 = dataList.map((item) {
-          DateTime date = DateTime.parse(item['date']);
+          List<Map<String, dynamic>> attendanceData2 = dataList.map((item) {
+            DateTime date = DateTime.parse(item['date']);
+            // Handle empty or "N/A" values gracefully
+            String checkIn = (item['check_in'] != "N/A" && item['check_in'].isNotEmpty)
+                ? Utils.utcToLocalTime(item['check_in'])
+                : "--";
+            String checkOut = (item['check_out'] != "N/A" && item['check_out'].isNotEmpty)
+                ? Utils.utcToLocalTime(item['check_out'])
+                : "--";
 
-          // Handle "N/A" values gracefully
-          String checkIn = item['check_in'] != "N/A"
-              ? Utils.utcToLocalTime(item['check_in'])
-              : "--";
-          String checkOut = item['check_out'] != "N/A"
-              ? Utils.utcToLocalTime(item['check_out'])
-              : "--";
+            String hours = "--";
 
-          String hours = "--";
+            if (item['check_in'] != "N/A" &&
+                item['check_out'] != "N/A" &&
+                item['check_in'].isNotEmpty &&
+                item['check_out'].isNotEmpty) {
+              DateTime inTime = DateTime.parse(item['check_in']);
+              DateTime outTime = DateTime.parse(item['check_out']);
+              Duration diff = outTime.difference(inTime);
+              hours = _formatDuration(diff);
+            }
 
-          if (item['check_in'] != "N/A" && item['check_out'] != "N/A") {
-            DateTime inTime = DateTime.parse(item['check_in']);
-            String formattedTime = DateFormat('hh:mm a').format(inTime);
-            DateTime outTime = DateTime.parse(item['check_out']);
-            String formattedTime2 = DateFormat('hh:mm a').format(inTime);
-            Duration diff = outTime.difference(inTime);
-            hours = _formatDuration(diff);
-          }
+            return {
+              'date': date,
+              'in': checkIn,
+              'out': checkOut,
+              'hours': hours,
+            };
+          }).toList();
 
-          return {
-            'date': date,
-            'in': checkIn,
-            'out': checkOut,
-            'hours': hours,
-          };
-        }).toList();
-
-        setState(() {
-          // Assign the transformed data to the state variable
-          attendanceData = attendanceData2;
-        });
-
-        Navigator.pop(context);
+          setState(() {
+            attendanceData = attendanceData2;
+            _isLoading = false;  // Data is loaded, stop loading animation
+          });
+        } else {
+          setState(() {
+            _isLoading = false;  // Data is loaded, stop loading animation
+          });
+          Fluttertoast.showToast(msg: "No attendance data available");
+        }
       } else {
-        Navigator.pop(context);
+        setState(() {
+          _isLoading = false;  // Data is loaded, stop loading animation
+        });
         Fluttertoast.showToast(msg: "Failed: ${response.statusCode}");
       }
+
+
     } catch (e) {
-      Navigator.pop(context);
+      // Navigator.pop(context);
+      _isLoading = false;  // Data is loaded, stop loading animation
       Fluttertoast.showToast(msg: "Error: $e");
     }
-  }
-
-  /// Helper function to format datetime strings into "hh:mm a"
-  String _formatTime(String dateTimeString) {
-    DateTime dateTime = DateTime.parse(dateTimeString);
-    return "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')} "
-        "${dateTime.hour < 12 ? 'AM' : 'PM'}";
   }
 
   /// Helper function to format Duration into "hh:mm"
@@ -133,11 +160,29 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text("Attendance History"),
+        backgroundColor: Colors.red[800],  // You can change this color to any you'd prefer
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+              );
+            },
+          ),
+        ],
+// Optional, to remove the shadow if you don't want it
+      ),
+
       backgroundColor: Colors.grey[200],
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
+            // _buildHeader(),
             _buildDateRangePicker(context),
             Expanded(child: _buildAttendanceList()),
           ],
@@ -152,20 +197,33 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Attendance History',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(width: 8), // Space between back button and title
+              const Text(
+                'Attendance History',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.red),
             onPressed: () {
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>LoginScreen()),);
-
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+              );
             },
-          )
+          ),
         ],
       ),
     );
@@ -230,12 +288,16 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
   }
 
   Widget _buildAttendanceList() {
+    if (_isLoading) {
+      return _buildShimmerEffect();  // Show shimmer effect while loading
+    }
+    _isLoading=false;
     List<Map<String, dynamic>> data = filteredData;
 
     if (data.isEmpty) {
       return const Center(
         child: Text(
-          'No attendance records found for this range.',
+          'No attendance records found',
           style: TextStyle(fontSize: 16, color: Colors.grey),
         ),
       );
@@ -355,6 +417,63 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
           )
         ],
       ),
+    );
+  }
+  Widget _buildShimmerEffect() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,  // Number of shimmer items you want to display
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 2,
+                  blurRadius: 5,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 15,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        width: 80,
+                        height: 15,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

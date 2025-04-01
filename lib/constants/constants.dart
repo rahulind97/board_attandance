@@ -5,6 +5,7 @@
   static const String CHECK_IN_OUT = 'check_in_out.php';
   static const String GET_DETAILS = 'get_details.php';
   static const String IN_OUT_HISTORY = 'in_out_history.php';
+  static const String GET_USERS = 'get_user_list.php';
 
 
 
@@ -15,6 +16,7 @@
   static const String CHECKIN_TIME = 'checkinTime';
   static const String CHECKOUT_TIME = 'checkoutTime';
   static const String CHECK_IN_OUT_STATUS = 'status';
+  static const String USER_ROLE = 'role';
   // static const String USER_ID = 'totalTime';
   // static const String USER_ID = 'userId';
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:attandance/constants/constants.dart';
+import 'package:attandance/screens/UserListScreen.dart';
 import 'package:attandance/utils/Utils.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -282,7 +283,7 @@ class _AttendanceScreenState extends State<HomeScreen>
         actions: [
           GestureDetector(
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => AttendanceHistory()),);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => UsersListScreen()),);
             },
             child: CircleAvatar(
               backgroundColor: Colors.grey[200],

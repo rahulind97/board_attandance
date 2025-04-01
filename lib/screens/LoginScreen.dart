@@ -45,6 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Utils.saveStringToPrefs(constants.EMAIL, data['user']['email']);
           Utils.saveStringToPrefs(constants.MOBILE, data['user']['mobile']);
           Utils.saveStringToPrefs(constants.USER_ID, data['user']['id']);
+          Utils.saveStringToPrefs(constants.USER_ROLE, data['user']['role']);
           Fluttertoast.showToast(msg: "Login successful!");
           // Navigate to next screen or handle the response
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()),);
