@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:attandance/constants/constants.dart';
+import 'package:attandance/screens/AddUserScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:shimmer/shimmer.dart';
@@ -118,6 +119,15 @@ class _UsersListScreenState extends State<UsersListScreen> {
       appBar: AppBar(
         title: Text('Users List'),
         backgroundColor: Colors.red[800],
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => AddUserScreen()));
+            },
+            icon: const Icon(Icons.add_box, color: Colors.white),
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
       body: Column(
         children: [

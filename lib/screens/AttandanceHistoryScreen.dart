@@ -79,10 +79,8 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
         data: {
           "user_id": widget.userId,
           "role": await Utils.getStringFromPrefs(constants.USER_ROLE),
-          // "role": '1',
           "start_date":startDate1,
           "end_date":endDate2
-
         },
       );
 
@@ -414,8 +412,10 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
                 ),
               )
             ],
-          )
+
+          ),
         ],
+
       ),
     );
   }

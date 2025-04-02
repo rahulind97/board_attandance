@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:attandance/constants/constants.dart';
+import 'package:attandance/screens/AttandanceHistoryScreen.dart';
 import 'package:attandance/screens/UserListScreen.dart';
 import 'package:attandance/utils/Utils.dart';
 import 'package:dio/dio.dart';
@@ -11,7 +12,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 
 import '../utils/ApiInterceptor.dart';
-import 'AttandanceHistoryScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -36,8 +36,9 @@ class _AttendanceScreenState extends State<HomeScreen>
   double _currentLat = 0.0;
   double _currentLang= 0.0;
   String _currentRadius='';
+  String _userRole='0';
   String _address = "Fetching address...";
-
+  String? userId ='';
   final now = DateTime.now();
   bool _isLoading = false;
   final Dio _dio = ApiInterceptor.createDio(); // Use ApiInterceptor to create Dio instance
@@ -61,6 +62,8 @@ class _AttendanceScreenState extends State<HomeScreen>
     _time = timeFormat.format(now2);
     _date = dateFormat.format(now2);
     _name = (await Utils.getStringFromPrefs(constants.USER_NAME))!;
+    userId = await Utils.getStringFromPrefs(constants.USER_ID);
+    _userRole= (await Utils.getStringFromPrefs(constants.USER_ROLE))!;
     // _status = 'checkin';
     setState(() {
 
@@ -116,13 +119,13 @@ class _AttendanceScreenState extends State<HomeScreen>
         double distanceInMeters = Geolocator.distanceBetween(_checkInLat, _checkInLong, _currentLat, _currentLang);
         print("distance"+distanceInMeters.toString());
         print("radius"+_checkInRad.toString());
-        if(distanceInMeters <= _checkInRad){
+        // if(distanceInMeters <= _checkInRad){
           print("distance"+distanceInMeters.toString());
           _currentRadius= distanceInMeters.toString();
           _status== '' ? _checkInOut("in") :_checkInOut("out");
 
-        }
-        else Fluttertoast.showToast(msg: "You are not in Checkin Range");
+        // }
+        // else Fluttertoast.showToast(msg: "You are not in Checkin Range");
 
 
       } else {
@@ -156,36 +159,50 @@ class _AttendanceScreenState extends State<HomeScreen>
   }
 
   void _checkInOut(String action) async {
-
     try {
+
+
+      if (userId == null || _currentLat == null || _currentLang == null || _currentRadius == null) {
+        Fluttertoast.showToast(msg: "Missing required data");
+        return;
+      }
+      FormData formData = FormData.fromMap({
+        "user_id": userId,
+        "action": action,
+        "lat": _currentLat.toString(),
+        "long": _currentLang.toString(),
+        "location": _address,
+        "radius": _currentRadius.toString(),
+      });
+      formData.fields.forEach((field) => print("${field.key}: ${field.value}"));
       final response = await _dio.post(
-        constants.BASE_URL+constants.CHECK_IN_OUT,
+        "${constants.BASE_URL}${constants.CHECK_IN_OUT}", // Ensure correct endpoint
+        data: formData,
         options: Options(
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "multipart/form-data",
           },
         ),
-        data: {
-          "user_id": await Utils.getStringFromPrefs(constants.USER_ID),
-          "action": action,
-          "lat": _currentLat,
-          "long": _currentLang,
-          "location":_address,
-          "radius" : _currentRadius
-        },
       );
 
       setState(() => _isLoading = false);
 
       if (response.statusCode == 200) {
         final data = response.data;
-        Fluttertoast.showToast(msg: "Login: ${data['message']}");
-        _getCheckInDetails();
+        print("Response Data: $data");
+
+        if (data["status"] == "success") {
+          Fluttertoast.showToast(msg: "Success: ${data['message']}");
+          _getCheckInDetails();
+        } else {
+          Fluttertoast.showToast(msg: "Error: ${data['message']}");
+        }
       } else {
-        Fluttertoast.showToast(msg: "Login failed: ${response.statusCode}");
+        Fluttertoast.showToast(msg: "Request failed: ${response.statusCode}");
       }
     } catch (e) {
       setState(() => _isLoading = false);
+      print("Error: $e");
       Fluttertoast.showToast(msg: "Error: $e");
     }
   }
@@ -193,7 +210,7 @@ class _AttendanceScreenState extends State<HomeScreen>
     setState(() => _isLoading = true);
 
     try {
-      final response = await _dio.post(
+      Response response = await _dio.post(
         constants.BASE_URL+constants.GET_DETAILS,
         options: Options(
           headers: {
@@ -283,7 +300,7 @@ class _AttendanceScreenState extends State<HomeScreen>
         actions: [
           GestureDetector(
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => UsersListScreen()),);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => _userRole=='1'? UsersListScreen() : AttendanceHistory(userId:userId.toString())),);
             },
             child: CircleAvatar(
               backgroundColor: Colors.grey[200],
@@ -427,17 +444,3 @@ class _AttendanceScreenState extends State<HomeScreen>
       ],
     );
   }}
-
-// class ProfilePage extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Profile Page'),
-//       ),
-//       body: const Center(
-//         child: Text('Profile details here!'),
-//       ),
-//     );
-//   }
-// }
