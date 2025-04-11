@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+import '../constants/Colors.dart';
 import '../utils/ApiInterceptor.dart';
 import '../utils/Utils.dart';
 import 'HomeScreen.dart';
@@ -73,12 +74,12 @@ class _LoginScreenState extends State<LoginScreen> {
       onSaved: (value) => onSaved(value!),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: Colors.red[800]),
+        prefixIcon: Icon(icon, color: thameColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.0),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.red[800]!, width: 2),
+          borderSide: BorderSide(color: thameColor!, width: 2),
           borderRadius: BorderRadius.circular(12.0),
         ),
         filled: true,
@@ -91,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: Colors.red[800]))
+          ? Center(child: CircularProgressIndicator(color: thameColor))
           : Center(  // <-- Center the content
         child: SingleChildScrollView(
           padding: EdgeInsets.all(24.0),
@@ -144,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ElevatedButton(
                   onPressed: _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[800],
+                    backgroundColor: thameColor,
                     padding: EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12.0),
@@ -168,11 +169,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     TextButton(
                       onPressed: () {},
-                      child: Text('Forgot Password?', style: TextStyle(color: Colors.red[800])),
+                      child: Text('Forgot Password?', style: TextStyle(color: thameColor)),
                     ),
                     TextButton(
                       onPressed: () {},
-                      child: Text('Sign Up', style: TextStyle(color: Colors.red[800])),
+                      child: Text('Sign Up', style: TextStyle(color: thameColor)),
                     ),
                   ],
                 ),

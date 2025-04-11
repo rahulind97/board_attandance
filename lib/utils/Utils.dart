@@ -9,6 +9,8 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../constants/Colors.dart';
+
 class Utils {
   static Future<void> saveStringToPrefs(String key, String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -46,7 +48,7 @@ class Utils {
         return WillPopScope(
           child:SpinKitDoubleBounce(
 
-            color: Colors.red[800],
+            color: thameColor,
             size: 50.0,
           ),
           onWillPop: () async => false,

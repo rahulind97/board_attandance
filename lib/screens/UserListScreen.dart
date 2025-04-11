@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../constants/Colors.dart';
 import '../utils/ApiInterceptor.dart';
 import 'AttandanceHistoryScreen.dart';
 
@@ -118,7 +119,7 @@ class _UsersListScreenState extends State<UsersListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Users List'),
-        backgroundColor: Colors.red[800],
+        backgroundColor: thameColor,
         actions: [
           IconButton(
             onPressed: () {

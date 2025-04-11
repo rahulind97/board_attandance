@@ -2,6 +2,7 @@ import 'package:attandance/constants/constants.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
+import '../constants/Colors.dart';
 import '../utils/ApiInterceptor.dart';
 
 class AddUserScreen extends StatefulWidget {
@@ -18,7 +19,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
   final Dio _dio = ApiInterceptor.createDio(); // Use ApiInter
 
   String? _selectedRole;
-  final List<String> _roles = ['Admin', 'User', 'Guest'];
+  final List<String> _roles = ['Admin', 'User'];
   bool _obscurePassword = true;
 
   Future<void> _addUser() async {
@@ -32,7 +33,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
         "password": _passwordController.text,
         "mobile": _phoneController.text,
         "role": "1",
-        "role_type": "0",
+        "role_type": _selectedRole=='Admin' ? '1':'0',
       });
 
       Response response = await _dio.post(
@@ -40,16 +41,12 @@ class _AddUserScreenState extends State<AddUserScreen> {
         data: formData,
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && response.data['status']=='success') {
         print("User added successfully: ${response.data}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("User added successfully!")),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("User added successfully!")),);
       } else {
         print("Failed to add user: ${response.statusMessage}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to add user!")),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.data['message'])),);
       }
     } catch (e) {
       print("Error: $e");
@@ -62,7 +59,9 @@ class _AddUserScreenState extends State<AddUserScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Add User')),
+      appBar: AppBar(title: Text('Add User'),
+        backgroundColor: thameColor,  // You can change this color to any you'd prefer
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -108,6 +107,8 @@ class _AddUserScreenState extends State<AddUserScreen> {
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                 ),
+
+
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value!.isEmpty) return 'Enter an email';
@@ -154,10 +155,20 @@ class _AddUserScreenState extends State<AddUserScreen> {
                 validator: (value) => value!.length < 6 ? 'Password must be at least 6 characters' : null,
               ),
               SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _addUser,
-                child: Text('Add User'),
-              ),
+              Center(
+                child: SizedBox(
+                  width: 200, // Set desired width
+                  child: ElevatedButton(
+                    onPressed: _addUser,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: thameColor, // Change button color
+                      foregroundColor: Colors.white, // Change text color
+                      padding: EdgeInsets.symmetric(vertical: 16), // Adjust padding
+                    ),
+                    child: Text('Add User'),
+                  ),
+                ),
+              )
             ],
           ),
         ),

@@ -1,0 +1,2 @@
+/Users/shailendrachaturvedi/Board Attandance/attandance/android/app/.cxx/Debug/723b3q5e/x86_64/CMakeFiles/edit_cache.dir
+/Users/shailendrachaturvedi/Board Attandance/attandance/android/app/.cxx/Debug/723b3q5e/x86_64/CMakeFiles/rebuild_cache.dir

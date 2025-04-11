@@ -1,12 +1,18 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:attandance/screens/LoginScreen.dart';
 import 'package:dio/dio.dart';
+import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../constants/Colors.dart';
 import '../constants/constants.dart';
 import '../utils/ApiInterceptor.dart';
 import '../utils/Utils.dart';
@@ -155,21 +161,70 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
     return "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}";
   }
 
+  Future<String> createExcelFromList(List<Map<String, dynamic>> dataList) async {
+    // Create Excel and Sheet
+    var excel = Excel.createExcel();
+    Sheet sheetObject = excel['Sheet1'];
+
+    // Add header from keys
+    sheetObject.appendRow(dataList.first.keys.toList());
+
+    // Add rows from values
+    for (var row in dataList) {
+      sheetObject.appendRow(row.values.toList());
+    }
+
+    // Save to internal storage (does NOT require special permission)
+    Directory directory = await getApplicationDocumentsDirectory();
+    String outputFile = '${directory.path}/data_export.xlsx';
+
+    File(outputFile)
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(excel.encode()!);
+
+    return outputFile;
+  }
+
+  Future<void> exportListAndSendEmail() async {
+    try {
+      List<Map<String, dynamic>> myData = [
+        {'Name': 'Shailendra', 'Email': 'rahul.kumar@indiaresults.com'},
+        {'Name': 'John', 'Email': 'john@example.com'},
+        {'Name': 'Alice', 'Email': 'alice@example.com'},
+      ];
+
+      // No need to request permission for internal storage
+      final filePath = await createExcelFromList(myData);
+
+      final Email email = Email(
+        body: 'Please find the attached Excel export.',
+        subject: 'Excel Export from App',
+        recipients: ['receiver@example.com'], // Update this!
+        attachmentPaths: [filePath],
+        isHTML: false,
+      );
+
+      await FlutterEmailSender.send(email);
+    } catch (e) {
+      print('Error exporting and sending email: $e');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Attendance History"),
-        backgroundColor: Colors.red[800],  // You can change this color to any you'd prefer
+        backgroundColor: thameColor,  // You can change this color to any you'd prefer
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => LoginScreen()),
-              );
+              // Navigator.pushReplacement(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => LoginScreen()),
+              // );
+              exportListAndSendEmail();
             },
           ),
         ],
@@ -275,6 +330,23 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
       initialDateRange: startDate != null && endDate != null
           ? DateTimeRange(start: startDate!, end: endDate!)
           : null,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.teal, // 👉 Header background color
+              onPrimary: Colors.white, // 👉 Header text/icon color
+              onSurface: Colors.black, // 👉 Default text color
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.teal, // 👉 Button text color
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
