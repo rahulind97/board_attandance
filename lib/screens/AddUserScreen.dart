@@ -107,8 +107,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                 ),
-
-
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value!.isEmpty) return 'Enter an email';
