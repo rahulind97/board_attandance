@@ -300,7 +300,7 @@ class _AttendanceScreenState extends State<HomeScreen>
         actions: [
           GestureDetector(
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => _userRole=='1'? UsersListScreen() : AttendanceHistory(userId:userId.toString())),);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => _userRole=='1'? UsersListScreen() : AttendanceHistory(userId:userId.toString(),exportUserId:userId.toString(),)),);
             },
             child: CircleAvatar(
               backgroundColor: Colors.grey[200],

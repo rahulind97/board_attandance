@@ -7,6 +7,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../constants/Colors.dart';
 import '../utils/ApiInterceptor.dart';
+import '../utils/Utils.dart';
 import 'AttandanceHistoryScreen.dart';
 
 class UsersListScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _UsersListScreenState extends State<UsersListScreen> {
   List<Color> avatarColors = [];
   bool isLoading = true;
   String searchQuery = "";
+  String userId = "";
   final Dio _dio = ApiInterceptor.createDio();
   final TextEditingController searchController = TextEditingController();
 
@@ -29,6 +31,7 @@ class _UsersListScreenState extends State<UsersListScreen> {
   }
 
   Future<void> fetchUsers() async {
+    userId=(await Utils.getStringFromPrefs(constants.USER_ID))!;
     try {
       var response = await _dio.post(
         constants.BASE_URL+constants.GET_USERS,
@@ -162,10 +165,11 @@ class _UsersListScreenState extends State<UsersListScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   child: ListTile(
                     onTap: () {
+                      print("object"+userId);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => AttendanceHistory(userId: user['user_id']),
+                          builder: (context) => AttendanceHistory(userId: userId,exportUserId: user['user_id'] ,),
                         ),
                       );
                       // onUserTap(user['user_id']); // This will show a SnackBar after navigation

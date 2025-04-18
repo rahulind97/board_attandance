@@ -1,4 +1,5 @@
 import 'package:attandance/constants/constants.dart';
+import 'package:attandance/screens/ForgetPasswordScreen.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -37,10 +38,8 @@ class _LoginScreenState extends State<LoginScreen> {
             "password": _password,
           },
         );
-
         setState(() => _isLoading = false);
-
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 && response.data['status']=='success') {
           final data = response.data;
           Utils.saveStringToPrefs(constants.USER_NAME, data['user']['name']);
           Utils.saveStringToPrefs(constants.EMAIL, data['user']['email']);
@@ -51,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // Navigate to next screen or handle the response
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()),);
         } else {
-          Fluttertoast.showToast(msg: "Login failed: ${response.statusCode}");
+          Fluttertoast.showToast(msg: "Login failed: ${response.data['message']}");
         }
       } catch (e) {
         setState(() => _isLoading = false);
@@ -163,19 +162,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
 
                 // Forgot Password & Sign Up
-                SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () {},
-                      child: Text('Forgot Password?', style: TextStyle(color: thameColor)),
-                    ),
-                    TextButton(
-                      onPressed: () {},
-                      child: Text('Sign Up', style: TextStyle(color: thameColor)),
-                    ),
-                  ],
+                SizedBox(height: 5),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>ForgetPasswordScreen()),);
+                    },
+                    child: Text('Forgot Password?', style: TextStyle(color: thameColor)),
+                  ),
                 ),
               ],
             ),
