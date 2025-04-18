@@ -62,9 +62,7 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
     }
     return attendanceData.where((entry) {
       DateTime date = entry['date'];
-      return date.isAfter(startDate!.subtract(const Duration(days: 1))) &&
-          date.isBefore(endDate!.add(const Duration(days: 1)));
-    }).toList();
+      return date.isAfter(startDate!.subtract(const Duration(days: 1))) && date.isBefore(endDate!.add(const Duration(days: 1)));}).toList();
   }
   void _getAttandanceHistory() async {
     // Utils.progressbar(context);
@@ -165,6 +163,14 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
 
   void _exportAttandanceHistory() async {
     Utils.progressbar(context);
+    DateTime defaultStartDate = DateTime(now.year, now.month, 1);
+    Object startDate1 = (startDate == null || startDate=="")
+        ? DateFormat('yyyy-MM-dd').format(defaultStartDate)
+        : startDate!;
+
+    Object endDate2 = (endDate == null || endDate=="")
+        ? DateFormat('yyyy-MM-dd').format(now)
+        : endDate!;
     try {
       final response = await _dio.post(
         constants.BASE_URL + constants.EXPORT_HISTORY,
@@ -175,8 +181,8 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
           "user_id": widget.userId,
           "export_user_id": widget.exportUserId,
           "role": await Utils.getStringFromPrefs(constants.USER_ROLE),
-          "start_date": "2025-04-01",
-          "end_date": "2025-04-30",
+          "start_date": startDate1,
+          "end_date": endDate2,
         },
       );
       final data = response.data;

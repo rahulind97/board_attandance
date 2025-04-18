@@ -118,14 +118,17 @@ class _AttendanceScreenState extends State<HomeScreen>
         await _getAddress(_currentLat!, _currentLang!);
         double distanceInMeters = Geolocator.distanceBetween(_checkInLat, _checkInLong, _currentLat, _currentLang);
         print("distance"+distanceInMeters.toString());
+        print("distancemtere"+_checkInRad.toString());
+        // print("lat"+_currentLat.toString()+"wew"+_currentLang.toString());
+
         print("radius"+_checkInRad.toString());
-        // if(distanceInMeters <= _checkInRad){
+        if(distanceInMeters <= _checkInRad){
           print("distance"+distanceInMeters.toString());
           _currentRadius= distanceInMeters.toString();
           _status== '' ? _checkInOut("in") :_checkInOut("out");
 
-        // }
-        // else Fluttertoast.showToast(msg: "You are not in Checkin Range");
+        }
+        else Fluttertoast.showToast(msg: "You are not in Checkin Range");
 
 
       } else {
