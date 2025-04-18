@@ -5,11 +5,11 @@ import 'package:attandance/screens/LoginScreen.dart';
 import 'package:dio/dio.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../constants/Colors.dart';
@@ -19,10 +19,12 @@ import '../utils/Utils.dart';
 
 class AttendanceHistory extends StatefulWidget {
   final String userId;
+  final String exportUserId;
 
   const AttendanceHistory({
     super.key,
     required this.userId,
+    required this.exportUserId,
   });
 
   @override
@@ -41,6 +43,7 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
   void initState() {
     super.initState();
     Future.delayed(Duration.zero, () {
+      // requestStoragePermission();
       _getAttandanceHistory();
     });
   }
@@ -59,14 +62,11 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
     }
     return attendanceData.where((entry) {
       DateTime date = entry['date'];
-      return date.isAfter(startDate!.subtract(const Duration(days: 1))) &&
-          date.isBefore(endDate!.add(const Duration(days: 1)));
-    }).toList();
+      return date.isAfter(startDate!.subtract(const Duration(days: 1))) && date.isBefore(endDate!.add(const Duration(days: 1)));}).toList();
   }
   void _getAttandanceHistory() async {
     // Utils.progressbar(context);
     DateTime defaultStartDate = DateTime(now.year, now.month, 1);
-
 // Check if startDate is null or empty, and set the default start date if true
     Object startDate1 = (startDate == null || startDate=="")
         ? DateFormat('yyyy-MM-dd').format(defaultStartDate)
@@ -83,10 +83,10 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
           headers: {'Content-Type': 'application/json'},
         ),
         data: {
-          "user_id": widget.userId,
+          "user_id": await Utils.getStringFromPrefs(constants.USER_ROLE)=="1" ?widget.exportUserId : widget.userId,
           "role": await Utils.getStringFromPrefs(constants.USER_ROLE),
-          "start_date":startDate1,
-          "end_date":endDate2
+          "start_date": startDate1,
+          "end_date": endDate2
         },
       );
 
@@ -94,31 +94,36 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
         final data = response.data;
 
         // Validate if 'data' exists and is not null or empty
-        if (data != null && data.containsKey('data') && data['data'] != null && data['data'].isNotEmpty) {
+        if (data != null && data.containsKey('data') && data['data'] != null && (data['data'] as List).isNotEmpty) {
           List<dynamic> dataList = data['data'];
-          print("object242323r");
-          print(data['data']);
+          print("User ID: ${widget.userId}");
+          print("Attendance data: $dataList");
 
           List<Map<String, dynamic>> attendanceData2 = dataList.map((item) {
             DateTime date = DateTime.parse(item['date']);
-            // Handle empty or "N/A" values gracefully
-            String checkIn = (item['check_in'] != "N/A" && item['check_in'].isNotEmpty)
-                ? Utils.utcToLocalTime(item['check_in'])
+
+            String? rawCheckIn = item['check_in'];
+            String? rawCheckOut = item['check_out'];
+
+            String checkIn = (rawCheckIn != null && rawCheckIn != "N/A" && rawCheckIn.isNotEmpty)
+                ? Utils.utcToLocalTime(rawCheckIn)
                 : "--";
-            String checkOut = (item['check_out'] != "N/A" && item['check_out'].isNotEmpty)
-                ? Utils.utcToLocalTime(item['check_out'])
+            String checkOut = (rawCheckOut != null && rawCheckOut != "N/A" && rawCheckOut.isNotEmpty)
+                ? Utils.utcToLocalTime(rawCheckOut)
                 : "--";
 
             String hours = "--";
-
-            if (item['check_in'] != "N/A" &&
-                item['check_out'] != "N/A" &&
-                item['check_in'].isNotEmpty &&
-                item['check_out'].isNotEmpty) {
-              DateTime inTime = DateTime.parse(item['check_in']);
-              DateTime outTime = DateTime.parse(item['check_out']);
-              Duration diff = outTime.difference(inTime);
-              hours = _formatDuration(diff);
+            if (rawCheckIn != null && rawCheckOut != null &&
+                rawCheckIn != "N/A" && rawCheckOut != "N/A" &&
+                rawCheckIn.isNotEmpty && rawCheckOut.isNotEmpty) {
+              try {
+                DateTime inTime = DateTime.parse(rawCheckIn);
+                DateTime outTime = DateTime.parse(rawCheckOut);
+                Duration diff = outTime.difference(inTime);
+                hours = _formatDuration(diff);
+              } catch (e) {
+                print("Error parsing time: $e");
+              }
             }
 
             return {
@@ -131,25 +136,65 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
 
           setState(() {
             attendanceData = attendanceData2;
-            _isLoading = false;  // Data is loaded, stop loading animation
+            _isLoading = false;
           });
         } else {
           setState(() {
-            _isLoading = false;  // Data is loaded, stop loading animation
+            _isLoading = false;
           });
           Fluttertoast.showToast(msg: "No attendance data available");
         }
       } else {
         setState(() {
-          _isLoading = false;  // Data is loaded, stop loading animation
+          _isLoading = false;
         });
         Fluttertoast.showToast(msg: "Failed: ${response.statusCode}");
       }
 
-
     } catch (e) {
-      // Navigator.pop(context);
-      _isLoading = false;  // Data is loaded, stop loading animation
+      setState(() {
+        _isLoading = false;
+      });
+      Fluttertoast.showToast(msg: "Error: $e");
+      print("Error: $e");
+    }
+
+  }
+
+  void _exportAttandanceHistory() async {
+    Utils.progressbar(context);
+    DateTime defaultStartDate = DateTime(now.year, now.month, 1);
+    Object startDate1 = (startDate == null || startDate=="")
+        ? DateFormat('yyyy-MM-dd').format(defaultStartDate)
+        : startDate!;
+
+    Object endDate2 = (endDate == null || endDate=="")
+        ? DateFormat('yyyy-MM-dd').format(now)
+        : endDate!;
+    try {
+      final response = await _dio.post(
+        constants.BASE_URL + constants.EXPORT_HISTORY,
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+        ),
+        data: {
+          "user_id": widget.userId,
+          "export_user_id": widget.exportUserId,
+          "role": await Utils.getStringFromPrefs(constants.USER_ROLE),
+          "start_date": startDate1,
+          "end_date": endDate2,
+        },
+      );
+      final data = response.data;
+      if (response.statusCode == 200) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'])),);
+      }else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message']), backgroundColor: Colors.red,),);
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      _isLoading = false; // Data is loaded, stop loading animation
       Fluttertoast.showToast(msg: "Error: $e");
     }
   }
@@ -160,55 +205,6 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
     int minutes = duration.inMinutes.remainder(60);
     return "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}";
   }
-
-  Future<String> createExcelFromList(List<Map<String, dynamic>> dataList) async {
-    // Create Excel and Sheet
-    var excel = Excel.createExcel();
-    Sheet sheetObject = excel['Sheet1'];
-
-    // Add header from keys
-    sheetObject.appendRow(dataList.first.keys.toList());
-
-    // Add rows from values
-    for (var row in dataList) {
-      sheetObject.appendRow(row.values.toList());
-    }
-
-    // Save to internal storage (does NOT require special permission)
-    Directory directory = await getApplicationDocumentsDirectory();
-    String outputFile = '${directory.path}/data_export.xlsx';
-
-    File(outputFile)
-      ..createSync(recursive: true)
-      ..writeAsBytesSync(excel.encode()!);
-
-    return outputFile;
-  }
-
-  Future<void> exportListAndSendEmail() async {
-    try {
-      List<Map<String, dynamic>> myData = [
-        {'Name': 'Shailendra', 'Email': 'rahul.kumar@indiaresults.com'},
-        {'Name': 'John', 'Email': 'john@example.com'},
-        {'Name': 'Alice', 'Email': 'alice@example.com'},
-      ];
-
-      // No need to request permission for internal storage
-      final filePath = await createExcelFromList(myData);
-
-      final Email email = Email(
-        body: 'Please find the attached Excel export.',
-        subject: 'Excel Export from App',
-        recipients: ['receiver@example.com'], // Update this!
-        attachmentPaths: [filePath],
-        isHTML: false,
-      );
-
-      await FlutterEmailSender.send(email);
-    } catch (e) {
-      print('Error exporting and sending email: $e');
-    }
-  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -218,14 +214,10 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(Icons.file_download_outlined, color: Colors.white),
             onPressed: () {
-              // Navigator.pushReplacement(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => LoginScreen()),
-              // );
-              exportListAndSendEmail();
-            },
+              _exportAttandanceHistory();
+              },
           ),
         ],
 // Optional, to remove the shadow if you don't want it
@@ -269,7 +261,7 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.red),
+            icon: const Icon(Icons.file_download_outlined, color: Colors.red),
             onPressed: () {
               Navigator.pushReplacement(
                 context,

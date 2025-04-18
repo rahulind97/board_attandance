@@ -7,6 +7,8 @@
   static const String IN_OUT_HISTORY = 'in_out_history.php';
   static const String GET_USERS = 'get_user_list.php';
   static const String CREATE_USER = 'create_user.php';
+  static const String EXPORT_HISTORY = 'export_history.php';
+  static const String RESET_PASSWORD = 'send_reset_link.php';
 
 
 
