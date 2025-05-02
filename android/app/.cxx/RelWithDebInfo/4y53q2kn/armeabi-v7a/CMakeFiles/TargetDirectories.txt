@@ -1,0 +1,2 @@
+/Users/shailendrachaturvedi/Board Attandance/attandance/android/app/.cxx/RelWithDebInfo/4y53q2kn/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/shailendrachaturvedi/Board Attandance/attandance/android/app/.cxx/RelWithDebInfo/4y53q2kn/armeabi-v7a/CMakeFiles/rebuild_cache.dir
