@@ -13,6 +13,8 @@
 
 
   static const String USER_NAME = 'userName';
+  static const String EMAILL = 'EMAIL';
+  static const String PASSWORD = 'PASSWORD';
   static const String EMAIL = 'email';
   static const String MOBILE = 'mobile';
   static const String USER_ID = 'userId';
@@ -20,6 +22,7 @@
   static const String CHECKOUT_TIME = 'checkoutTime';
   static const String CHECK_IN_OUT_STATUS = 'status';
   static const String USER_ROLE = 'role';
+  static const String DEVICE_ID = '_deviceIdKey';
   // static const String USER_ID = 'totalTime';
   // static const String USER_ID = 'userId';
 

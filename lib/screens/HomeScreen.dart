@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:attandance/constants/constants.dart';
 import 'package:attandance/screens/AttandanceHistoryScreen.dart';
@@ -9,7 +10,11 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as path;
+
+import 'package:dio/dio.dart';
 
 import '../utils/ApiInterceptor.dart';
 
@@ -41,6 +46,9 @@ class _AttendanceScreenState extends State<HomeScreen>
   String? userId ='';
   final now = DateTime.now();
   bool _isLoading = false;
+
+  File? _capturedImage;
+
   final Dio _dio = ApiInterceptor.createDio(); // Use ApiInterceptor to create Dio instance
 
   @override
@@ -125,8 +133,9 @@ class _AttendanceScreenState extends State<HomeScreen>
         if(distanceInMeters <= _checkInRad){
           print("distance"+distanceInMeters.toString());
           _currentRadius= distanceInMeters.toString();
-          _status== '' ? _checkInOut("in") :_checkInOut("out");
-
+          // _status== '' ? _checkInOut("in") :_checkInOut("out");
+          Navigator.pop(context);
+          _openCamera();//30 wfh
         }
         else Fluttertoast.showToast(msg: "You are not in Checkin Range");
 
@@ -161,10 +170,112 @@ class _AttendanceScreenState extends State<HomeScreen>
     }
   }
 
-  void _checkInOut(String action) async {
+  Future<void> _openCamera() async {
+    final ImagePicker picker = ImagePicker();
+
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+
+    if (image == null) {
+      Fluttertoast.showToast(msg: "Camera cancelled");
+      return;
+    }
+
+    final File capturedImage = File(image.path);
+
+    setState(() {
+      _capturedImage = capturedImage;
+    });
+
+    print(_status);
+    print(_status.runtimeType);
+    print("land");
+
+    if(_status.isEmpty){
+      _checkInOut("in", _capturedImage!);
+
+    }else{
+      showAlertDialog(
+        context,
+        "Are you sure you want to check out?",
+        onConfirm: () {
+          if (_capturedImage == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Please capture image first")),
+            );
+            return;
+          }
+          _checkInOut("out", _capturedImage!);
+        },
+      );
+    }
+
+
+
+  }
+  static void showAlertDialog(
+      BuildContext context,
+      String title, {
+        required VoidCallback onConfirm,
+      }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text(
+            'Confirm Checkout',
+            style: TextStyle(color: Colors.red),
+          ),
+          content: const Text(
+            'Are you sure you want to check out?',
+
+          ),
+          elevation: 5,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 15,
+          ),
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 8,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cancel
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+                onConfirm(); // Confirm action
+              },
+              child: const Text(
+                'OK',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+
+  void _checkInOut(String action,File capturedImage) async {
     try {
-
-
       if (userId == null || _currentLat == null || _currentLang == null || _currentRadius == null) {
         Fluttertoast.showToast(msg: "Missing required data");
         return;
@@ -176,6 +287,11 @@ class _AttendanceScreenState extends State<HomeScreen>
         "long": _currentLang.toString(),
         "location": _address,
         "radius": _currentRadius.toString(),
+        "picture": await MultipartFile.fromFile(
+          _capturedImage!.path,
+          filename: path.basename(_capturedImage!.path),
+        ),
+
       });
       formData.fields.forEach((field) => print("${field.key}: ${field.value}"));
       final response = await _dio.post(
@@ -361,9 +477,9 @@ class _AttendanceScreenState extends State<HomeScreen>
                           Fluttertoast.showToast(msg: "You alredy punch out");
                         }else
                         {
-                          Utils.progressbar(context);
+                             Utils.progressbar(context);
                           await _getCurrentLocation();
-                          Navigator.pop(context);
+
                         }
 
 

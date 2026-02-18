@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:attandance/constants/constants.dart';
 import 'package:attandance/screens/ForgetPasswordScreen.dart';
 import 'package:dio/dio.dart';
@@ -8,6 +10,10 @@ import '../constants/Colors.dart';
 import '../utils/ApiInterceptor.dart';
 import '../utils/Utils.dart';
 import 'HomeScreen.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -17,15 +23,33 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   String _email = '';
   String _password = '';
+  String _deviceId = '';
   bool _isLoading = false;
   final Dio _dio = ApiInterceptor.createDio(); // Use ApiInterceptor to create Dio instance
+  TextEditingController emailcontroller = TextEditingController();
+  TextEditingController passwordcontroller = TextEditingController();
+  static const _deviceIdKey = 'device_id';
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    initaite();
+  }
 
   void _login() async {
+    print("object"+await Utils.getDeviceId().toString());
+    // if(_deviceId.isEmpty)
+    //   {
+    //     _deviceId = await Utils.getDeviceId();
+    //   }
+
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       setState(() => _isLoading = true);
 
       try {
+       final _deviceId = await Utils.getDeviceId();
         final response = await _dio.post(
           constants.BASE_URL+constants.LOGIN,
           options: Options(
@@ -36,11 +60,14 @@ class _LoginScreenState extends State<LoginScreen> {
           data: {
             "email": _email,   // Use phone or email depending on your API field
             "password": _password,
+            "device_id": _deviceId,
           },
         );
         setState(() => _isLoading = false);
         if (response.statusCode == 200 && response.data['status']=='success') {
           final data = response.data;
+          Utils.saveStringToPrefs(constants.EMAILL, _email);
+          Utils.saveStringToPrefs(constants.PASSWORD, _password);
           Utils.saveStringToPrefs(constants.USER_NAME, data['user']['name']);
           Utils.saveStringToPrefs(constants.EMAIL, data['user']['email']);
           Utils.saveStringToPrefs(constants.MOBILE, data['user']['mobile']);
@@ -60,6 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildTextField({
+    required TextEditingController controller,
     required String label,
     required IconData icon,
     required bool isPassword,
@@ -67,6 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
     required String? Function(String?)? validator,
   }) {
     return TextFormField(
+      controller: controller,
       obscureText: isPassword,
       keyboardType: isPassword ? TextInputType.text : TextInputType.emailAddress,
       validator: validator,
@@ -106,6 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Phone Number Field
                 _buildTextField(
+                  controller: emailcontroller,
                   label: 'Email',
                   icon: Icons.email,
                   isPassword: false,
@@ -124,6 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Password Field
                 _buildTextField(
+                  controller: passwordcontroller,
                   label: 'Password',
                   icon: Icons.lock,
                   isPassword: true,
@@ -179,4 +210,17 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  void initaite() async{
+    print("herer");
+    // getDeviceId();
+     _deviceId = await Utils.getDeviceId();
+    print("DEVICE ID => $_deviceId");
+
+    _email = "dwedwede";
+    emailcontroller.text = (await Utils.getStringFromPrefs(constants.EMAILL))!;
+    passwordcontroller.text =(await Utils.getStringFromPrefs(constants.PASSWORD))!;
+    setState(() {});
+  }
+
 }

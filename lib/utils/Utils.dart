@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 import '../constants/Colors.dart';
 
@@ -341,5 +343,36 @@ class Utils {
     return buffer.toString();
   }
 
+  static const String _deviceIdKey = 'device_id';
+
+  static Future<String> getDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final cached = prefs.getString('device_id');
+    if (cached != null && cached.isNotEmpty) return cached;
+
+    String? deviceId;
+    final deviceInfo = DeviceInfoPlugin();
+
+    try {
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        final map = androidInfo.toMap();
+
+        deviceId = map['androidId']?.toString()
+            ?? map['id']?.toString();
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        deviceId = iosInfo.identifierForVendor;
+      }
+    } catch (e) {
+      debugPrint('Device ID error: $e');
+    }
+
+    deviceId ??= const Uuid().v4();
+    await prefs.setString('device_id', deviceId);
+
+    return deviceId;
+  }
 // ... Add more methods for different data types as needed
 }
