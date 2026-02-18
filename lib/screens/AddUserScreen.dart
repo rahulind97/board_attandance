@@ -17,10 +17,42 @@ class _AddUserScreenState extends State<AddUserScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final Dio _dio = ApiInterceptor.createDio(); // Use ApiInter
-
   String? _selectedRole;
   final List<String> _roles = ['Admin', 'User'];
   bool _obscurePassword = true;
+  String? _selectedBoardId;
+
+  List<Map<String, dynamic>> _boards = [];
+  bool _isLoadingBoards = false;
+
+
+  @override
+  void initState() {
+    super.initState();
+    fetchBoards();
+    print("Selected Board ID: $_selectedBoardId");
+
+  }
+
+  Future<void> fetchBoards() async {
+    try {
+      final response = await Dio().get(
+        'https://attendance.indiaresults.com/get_boards_list.php',
+      );
+
+      final Map<String, dynamic> data = response.data;
+
+      print('FULL RESPONSE: $data');
+
+      if (data['status'] == 'success') {
+        setState(() {
+          _boards = List<Map<String, dynamic>>.from(data['data']);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching boards: $e');
+    }
+  }
 
   Future<void> _addUser() async {
     if (!_formKey.currentState!.validate()) return;
@@ -34,6 +66,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
         "mobile": _phoneController.text,
         "role": "1",
         "role_type": _selectedRole=='Admin' ? '1':'0',
+        "board_id": _selectedBoardId
       });
 
       Response response = await _dio.post(
@@ -90,6 +123,32 @@ class _AddUserScreenState extends State<AddUserScreen> {
                 validator: (value) => value == null ? 'Please select a role' : null,
               ),
               SizedBox(height: 10),
+              _isLoadingBoards
+                  ? const CircularProgressIndicator()
+                  : DropdownButtonFormField<String>(
+                value: _selectedBoardId,
+                decoration: const InputDecoration(
+                  labelText: 'Board',
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                  EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                ),
+                items: _boards.map((board) {
+                  return DropdownMenuItem<String>(
+                    value: board['id'].toString(),
+                    child: Text(board['name']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedBoardId = value;
+                  });
+                },
+                validator: (value) =>
+                value == null ? 'Please select a board' : null,
+              ),
+              SizedBox(height: 10),
+
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(

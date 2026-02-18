@@ -316,24 +316,44 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
   }
 
   Future<void> _selectDateRange(BuildContext context) async {
+    final DateTime now = DateTime.now();
+
+    final DateTime firstDate = DateTime(now.year, 1, 1);
+    final DateTime lastDate = DateTime(now.year, 12, 31);
+
+    // 👇 Force current year dates
+    DateTimeRange initialRange = DateTimeRange(
+      start: now,
+      end: now,
+    );
+
+    // 👇 Use previous selection ONLY if it is from current year
+    if (startDate != null &&
+        endDate != null &&
+        startDate!.year == now.year &&
+        endDate!.year == now.year) {
+      initialRange = DateTimeRange(
+        start: startDate!,
+        end: endDate!,
+      );
+    }
+
     DateTimeRange? picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(2024),
-      lastDate: DateTime(2026),
-      initialDateRange: startDate != null && endDate != null
-          ? DateTimeRange(start: startDate!, end: endDate!)
-          : null,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      initialDateRange: initialRange,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Colors.teal, // 👉 Header background color
-              onPrimary: Colors.white, // 👉 Header text/icon color
-              onSurface: Colors.black, // 👉 Default text color
+            colorScheme: const ColorScheme.light(
+              primary: Colors.teal,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.teal, // 👉 Button text color
+                foregroundColor: Colors.teal,
               ),
             ),
           ),
