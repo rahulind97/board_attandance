@@ -92,6 +92,7 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
 
       if (response.statusCode == 200) {
         final data = response.data;
+        print(data);
 
         // Validate if 'data' exists and is not null or empty
         if (data != null && data.containsKey('data') && data['data'] != null && (data['data'] as List).isNotEmpty) {
@@ -451,7 +452,7 @@ class _AttendanceHistoryState extends State<AttendanceHistory> {
                     ),
                   ),
                   Text(
-                    DateFormat.E().format(DateTime(2025, 3, int.parse(day))),
+                    weekday,
                     style: const TextStyle(
                       fontSize: 12,
                       color: Colors.white,
